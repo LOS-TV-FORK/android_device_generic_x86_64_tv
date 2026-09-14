@@ -1,0 +1,2 @@
+type bootdir_file, file_type;
+type esp_file, file_type;

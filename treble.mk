@@ -1,0 +1,131 @@
+# Graphics HAL
+PRODUCT_PACKAGES += \
+    android.hardware.graphics.mapper@2.0-impl-2.1 \
+    android.hardware.graphics.mapper@4.0-impl.minigbm \
+    android.hardware.graphics.mapper@4.0-impl.minigbm_arcvm\
+    android.hardware.graphics.mapper@4.0-impl.minigbm_gbm_mesa \
+    android.hardware.graphics.mapper@4.0-impl.minigbm_nouveau \
+    android.hardware.graphics.allocator@2.0-impl \
+    android.hardware.graphics.allocator@2.0-service \
+    android.hardware.graphics.allocator@4.0-service.minigbm \
+    android.hardware.graphics.allocator@4.0-service.minigbm_arcvm \
+    android.hardware.graphics.allocator@4.0-service.minigbm_gbm_mesa \
+    android.hardware.graphics.allocator@4.0-service.minigbm_nouveau
+
+# HWComposer HAL
+PRODUCT_PACKAGES += \
+    android.hardware.graphics.composer@2.1-drmfb-service \
+    android.hardware.graphics.composer@2.1-service-clone \
+    android.hardware.graphics.composer@2.4-service
+
+# Audio HAL
+PRODUCT_PACKAGES += \
+    android.hardware.audio.service \
+    android.hardware.audio@7.1-impl \
+    android.hardware.audio.effect@7.0-impl \
+    android.hardware.soundtrigger@2.3-impl
+
+# Bluetooth HAL
+PRODUCT_PACKAGES += \
+    android.hardware.bluetooth-service.default \
+    android.hardware.bluetooth.audio-impl
+
+# Media codec
+PRODUCT_PACKAGES += \
+    android.hardware.media.c2-ffmpeg-service \
+    android.hardware.media.c2-service.intel \
+    libmfx_c2_components_hw \
+    libvpl \
+    libmfx-gen
+
+# DumpState HAL
+PRODUCT_PACKAGES += \
+    com.android.hardware.dumpstate
+
+# Gatekeeper HAL
+PRODUCT_PACKAGES += \
+    android.hardware.gatekeeper@1.0-service.software
+
+# Health HAL
+PRODUCT_PACKAGES += \
+    android.hardware.health-service.example \
+    android.hardware.health-service.example_recovery
+
+# Keymaster HAL
+PRODUCT_PACKAGES += \
+    android.hardware.keymaster@4.1-service
+
+# Keymint HAL
+PRODUCT_PACKAGES += \
+    android.hardware.security.keymint-service
+
+#
+# Non-secure implementation of AuthGraph HAL for compliance.
+#
+PRODUCT_PACKAGES += \
+    com.android.hardware.security.authgraph
+
+#
+# Non-secure implementation of Secretkeeper HAL for compliance.
+#
+PRODUCT_PACKAGES += \
+    com.android.hardware.security.secretkeeper
+
+# Light HAL
+PRODUCT_PACKAGES += \
+    android.hardware.light-service.x86
+
+# Memtrack HAL
+PRODUCT_PACKAGES += \
+    com.android.hardware.memtrack
+
+# Power HAL
+PRODUCT_PACKAGES += \
+    power.x86 \
+    android.hardware.power-service.example
+
+# Sensors HAL
+PRODUCT_PACKAGES += \
+    android.hardware.sensors@1.0-impl
+
+# USB HAL
+PRODUCT_PACKAGES += \
+    android.hardware.usb-service.example
+
+# Drm HAL
+PRODUCT_PACKAGES += \
+    android.hardware.drm-service.clearkey
+
+# GPS HAL
+PRODUCT_PACKAGES += \
+    android.hardware.gnss@1.0-impl \
+    android.hardware.gnss@1.0-service
+
+# Thermal HAL
+PRODUCT_PACKAGES += \
+    android.hardware.thermal@2.0-service.intel
+
+# Bootctrl HAL
+PRODUCT_PACKAGES += \
+    android.hardware.boot@1.2-x86impl \
+    android.hardware.boot@1.2-x86impl.recovery \
+    android.hardware.boot@1.2-service
+
+PRODUCT_SOONG_NAMESPACES += \
+    hardware/google/camera \
+    hardware/google/camera/devices/EmulatedCamera \
+
+PRODUCT_PACKAGES += \
+    android.hardware.camera.provider@2.7-service-google \
+    libgooglecamerahwl_impl
+
+PRODUCT_COPY_FILES += \
+    hardware/google/camera/devices/EmulatedCamera/hwl/configs/emu_camera_back.json:$(TARGET_COPY_OUT_VENDOR)/etc/config/emu_camera_back.json \
+    hardware/google/camera/devices/EmulatedCamera/hwl/configs/emu_camera_front.json:$(TARGET_COPY_OUT_VENDOR)/etc/config/emu_camera_front.json \
+    hardware/google/camera/devices/EmulatedCamera/hwl/configs/emu_camera_depth.json:$(TARGET_COPY_OUT_VENDOR)/etc/config/emu_camera_depth.json
+
+# HIDL Allocator
+PRODUCT_PACKAGES += android.hidl.allocator@1.0-service
+
+# vndservice & vndservicemanager & hwservicemanager
+PRODUCT_PACKAGES += vndservice vndservicemanager hwservicemanager

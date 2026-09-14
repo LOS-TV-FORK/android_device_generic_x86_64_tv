@@ -1,0 +1,263 @@
+#
+# BoardConfig.mk for x86 platform
+#
+LOCAL_COMMON_TREE := device/generic/x86_64_tablet
+
+# Always stamp a fresh build timestamp so a new build always reports the
+# current date (ro.build.date / ro.build.version.incremental). soong_ui
+# rewrites out/build_date.txt on every full run, but stamping it here covers
+# runs that go through kati/make directly. Ninja's "buildinfo.prop: ... ||
+# out/build_date.txt" is order-only (does NOT retrigger when the stamp
+# changes), so we also delete buildinfo.prop: with the output gone, ninja is
+# forced to regenerate it and pick up the fresh timestamp. build.prop and the
+# OTA metadata (post-timestamp / post-build-incremental) then follow.
+$(shell mkdir -p "$(OUT_DIR)" && date +%s > "$(OUT_DIR)/build_date.txt" && rm -f "$(OUT_DIR)/target/product/x86_64_tablet/obj/PACKAGING/system_build_prop_intermediates/buildinfo.prop")
+
+# The generic product target doesn't have any hardware-specific pieces.
+TARGET_NO_BOOTLOADER := true
+TARGET_CPU_ABI := x86_64
+TARGET_ARCH := x86_64
+TARGET_ARCH_VARIANT := sandybridge
+
+TARGET_2ND_CPU_ABI := x86
+TARGET_2ND_ARCH := x86
+TARGET_2ND_ARCH_VARIANT := sandybridge
+TARGET_CPU_VARIANT := generic
+TARGET_2ND_CPU_VARIANT := generic
+
+-include vendor/ax86-lite/ax86BoardConfig.mk
+
+ifeq ($(USE_LIBNDK_TRANSLATION_NB),true)
+include vendor/google/emu-x86/board/native_bridge_arm_on_x86.mk
+endif
+
+ifeq ($(USE_CROS_HOUDINI_NB),true)
+include vendor/google/chromeos-x86/board/native_bridge_arm_on_x86.mk
+endif
+
+ifeq ($(ANDROID_USE_INTEL_HOUDINI),true)
+include vendor/intel/proprietary/houdini/board/native_bridge_arm_on_x86.mk
+endif
+
+ifeq ($(ANDROID_USE_NDK_TRANSLATION),true)
+include vendor/google/proprietary/ndk_translation-prebuilt/board/native_bridge_arm_on_x86.mk
+endif
+
+TARGET_CPU_ABI_LIST_64_BIT := $(TARGET_CPU_ABI) $(NATIVE_BRIDGE_ABI_LIST_64_BIT)
+TARGET_CPU_ABI_LIST_32_BIT := $(TARGET_2ND_CPU_ABI) $(NATIVE_BRIDGE_ABI_LIST_32_BIT)
+TARGET_CPU_ABI_LIST := $(TARGET_CPU_ABI) $(TARGET_2ND_CPU_ABI) $(NATIVE_BRIDGE_ABI_LIST_32_BIT) $(NATIVE_BRIDGE_ABI_LIST_64_BIT)
+
+TARGET_USERIMAGES_USE_EXT4 := true
+BOARD_USERDATAIMAGE_PARTITION_SIZE := 576716800
+BOARD_CACHEIMAGE_PARTITION_SIZE := 69206016
+BOARD_CACHEIMAGE_FILE_SYSTEM_TYPE := ext4
+BOARD_FLASH_BLOCK_SIZE := 512
+TARGET_USERIMAGES_SPARSE_EXT_DISABLED := true
+
+TARGET_BOARD_PLATFORM := android-x86
+
+## Switch to EROFS image instead of Squashfs
+USE_SQUASHFS := 0
+USE_EROFS := 1
+
+# A/B
+AB_OTA_UPDATER := true
+
+AB_OTA_PARTITIONS += \
+    system \
+    initrd \
+    kernel \
+	ramdisk-recovery
+
+# Rootfs
+BOARD_ROOT_EXTRA_FOLDERS := boot
+
+# Full treble
+PRODUCT_FULL_TREBLE_OVERRIDE := true
+
+# No AVB
+BOARD_AVB_ENABLE := false
+
+# Some framework code requires this to enable BT
+BOARD_HAVE_BLUETOOTH := true
+BOARD_HAVE_BLUETOOTH_LINUX := true
+BOARD_SEPOLICY_DIRS += system/bt/vendor_libs/linux/sepolicy
+BOARD_HAVE_BLUETOOTH_INTEL_ICNV := true
+BOARD_USE_LEGACY_UI := true
+
+# customize the malloced address to be 16-byte aligned
+BOARD_MALLOC_ALIGNMENT := 16
+
+# Enable dex-preoptimization to speed up the first boot sequence
+# of an SDK AVD. Note that this operation only works on Linux for now
+ifeq ($(HOST_OS),linux)
+WITH_DEXPREOPT := true
+WITH_DEXPREOPT_PIC := true
+endif
+
+# the following variables could be overridden
+TARGET_PRELINK_MODULE := false
+TARGET_NO_KERNEL ?= false
+TARGET_EXTRA_KERNEL_MODULES := 
+ifneq ($(filter efi_img,$(MAKECMDGOALS)),)
+TARGET_KERNEL_ARCH ?= x86_64
+endif
+
+BOARD_USES_GENERIC_AUDIO ?= false
+BOARD_USES_ALSA_AUDIO := true
+BOARD_USES_TINY_ALSA_AUDIO := true
+INTEL_AUDIO_HAL := audio
+BUILD_WITH_ALSA_UTILS ?= true
+BOARD_HAS_GPS_HARDWARE ?= true
+
+# Don't build emulator
+BUILD_EMULATOR ?= false
+BUILD_STANDALONE_EMULATOR ?= false
+BUILD_EMULATOR_QEMUD ?= false
+BUILD_EMULATOR_OPENGL ?= false
+BUILD_EMULATOR_OPENGL_DRIVER ?= false
+BUILD_EMULATOR_QEMU_PROPS ?= false
+BUILD_EMULATOR_CAMERA_HAL ?= false
+BUILD_EMULATOR_GPS_MODULE ?= false
+BUILD_EMULATOR_LIGHTS_MODULE ?= false
+BUILD_EMULATOR_SENSORS_MODULE ?= false
+
+BUILD_ARM_FOR_X86 := $(WITH_NATIVE_BRIDGE)
+
+BOARD_USE_LIBVA_INTEL_DRIVER := true
+BOARD_USE_LIBVA := true
+BOARD_USE_LIBMIX := true
+BOARD_USES_WRS_OMXIL_CORE := true
+USE_INTEL_OMX_COMPONENTS := true
+
+USE_OPENGL_RENDERER := true
+NUM_FRAMEBUFFER_SURFACE_BUFFERS ?= 3
+BOARD_USES_DRM_GRALLOC := false
+BOARD_USES_DRM_HWCOMPOSER ?= true
+
+BOARD_USES_MINIGBM := true
+BOARD_USES_MINIGBM_INTEL := true
+BOARD_USES_GRALLOC1 := true
+BOARD_USES_IA_HWCOMPOSER := true
+TARGET_USES_HWC2 ?= true
+
+USE_CAMERA_STUB ?= false
+
+# This enables the wpa wireless driver
+# and hostapd tool
+BOARD_HOSTAPD_DRIVER := NL80211
+BOARD_WPA_SUPPLICANT_DRIVER := NL80211
+WPA_SUPPLICANT_VERSION := VER_0_8_X
+WIFI_HIDL_FEATURE_DUAL_INTERFACE := true
+WIFI_HIDL_FEATURE_AWARE := true
+
+BOARD_GPU_DRIVERS ?= crocus i915 iris freedreno panfrost nouveau r300g r600g radeonsi virgl vmwgfx
+ifneq ($(strip $(BOARD_GPU_DRIVERS)),)
+TARGET_HARDWARE_3D := true
+endif
+
+BOARD_MESA3D_BUILD_LIBGBM := true
+BOARD_MESA3D_GALLIUM_DRIVERS := crocus iris i915 nouveau r600 radeonsi svga virgl zink softpipe llvmpipe
+BOARD_MESA3D_VULKAN_DRIVERS := amd intel intel_hasvk virtio swrast nouveau
+BOARD_MESA3D_GALLIUM_VA := enabled
+BOARD_MESA3D_VIDEO_CODECS := h264dec h265dec vc1dec av1dec vp9dec
+BOARD_MESA3D_MESON_ARGS := -Dallow-kcmp=enabled -Dmesa-clc=system -Dprecomp-compiler=system
+BUILD_EMULATOR_OPENGL := true
+
+BOARD_KERNEL_CMDLINE := $(if $(filter x86_64,$(TARGET_ARCH) $(TARGET_KERNEL_ARCH)),, vmalloc=192M)
+TARGET_KERNEL_DIFFCONFIG := $(LOCAL_COMMON_TREE)/selinux_diffconfig
+
+# Atom specific
+ifeq ($(IS_INTEL_ATOM),true)
+
+# from celadon tablet
+BOARD_KERNEL_CMDLINE += \
+	intel_pstate=passive
+
+BOARD_KERNEL_CMDLINE += \
+	no_timer_check \
+	noxsaves \
+	reboot_panic=p,w \
+	i915.hpd_sense_invert=0x7 \
+	intel_iommu=off
+
+ifeq ($(TARGET_BUILD_VARIANT),user)
+BOARD_KERNEL_CMDLINE += console=tty0
+endif
+
+ifneq ($(TARGET_BUILD_VARIANT),user)
+BOARD_KERNEL_CMDLINE += console=ttyUSB0,115200n8
+endif
+
+# Fix screen off when s2idle is entered
+BOARD_KERNEL_CMDLINE += vga=current drm.atomic=1 i915.nuclear_pageflip=1 drm.vblankoffdelay=1 i915.fastboot=1
+
+# Fix timeout suspend from preventing wake events
+BOARD_KERNEL_CMDLINE += intel_idle.max_cstate=2 cstate=1 tsc=reliable force_tsc_stable=1 clocksource_failover=tsc
+
+endif
+
+ifeq ($(BOARD_IS_GO_BUILD), true)
+# SVELTE
+MALLOC_SVELTE := true
+endif
+
+KERNEL_DIR ?= kernel/x86/common
+
+# Surface specific
+ifeq ($(BOARD_IS_SURFACE_BUILD),true)
+KERNEL_DIR := kernel/x86/surface
+BOARD_KERNEL_CMDLINE += nvme_core.default_ps_max_latency_us=0 pcie_aspm=off
+endif
+
+# Zenith
+ifeq ($(BOARD_IS_ZENITH_BUILD),true)
+KERNEL_DIR := kernel/x86/zenith
+endif
+
+TARGET_KERNEL_SOURCE := $(KERNEL_DIR)
+COMPATIBILITY_ENHANCEMENT_PACKAGE := true
+PRC_COMPATIBILITY_PACKAGE := true
+ZIP_OPTIMIZATION_NO_INTEGRITY := true
+
+DEVICE_MANIFEST_FILE := $(LOCAL_COMMON_TREE)/manifest.xml
+
+DEVICE_PRODUCT_COMPATIBILITY_MATRIX_FILE := $(LOCAL_COMMON_TREE)/manifest_framework.xml
+
+BOARD_SEPOLICY_DIRS += $(LOCAL_COMMON_TREE)/sepolicy/celadon/thermal \
+						$(LOCAL_COMMON_TREE)/sepolicy/celadon/thermal/thermal-daemon
+SYSTEM_EXT_PRIVATE_SEPOLICY_DIRS += $(LOCAL_COMMON_TREE)/sepolicy/plat_private
+SYSTEM_EXT_PUBLIC_SEPOLICY_DIRS += $(LOCAL_COMMON_TREE)/sepolicy/public
+BOARD_VENDOR_SEPOLICY_DIRS += $(LOCAL_COMMON_TREE)/sepolicy/vendor
+
+TARGET_FLATTEN_APEX := true
+BOARD_SYSTEMIMAGE_PARTITION_SIZE := $(shell echo | awk '{printf "%.0f", 5.8 * 1000 * 1000 * 1000}')
+BOARD_RECOVERYIMAGE_PARTITION_SIZE := $(shell echo | awk '{printf "%.0f", 98 * 1000 * 1000}')
+TARGET_USERIMAGES_SPARSE_EXT_DISABLED := true
+BOARD_USES_OEMIMAGE := true
+BUILD_BROKEN_USES_NETWORK := true
+USE_XML_AUDIO_POLICY_CONF := 1
+
+BUILD_BROKEN_DUP_RULES := true
+BUILD_BROKEN_USES_BUILD_HOST_EXECUTABLE := true
+BUILD_BROKEN_USES_BUILD_HOST_STATIC_LIBRARY := true
+BUILD_BROKEN_ELF_PREBUILT_PRODUCT_COPY_FILES := true
+BUILD_BROKEN_PLUGIN_VALIDATION := soong-llvm22
+BUILD_BROKEN_INCORRECT_PARTITION_IMAGES := true
+STAGEFRIGHT_AVCENC_CFLAGS := -DANDROID_GCE
+
+# Properties
+BOARD_PROPERTY_OVERRIDES_SPLIT_ENABLED := true
+TARGET_VENDOR_PROP += $(LOCAL_COMMON_TREE)/properties/vendor.prop
+TARGET_SYSTEM_PROP += $(LOCAL_COMMON_TREE)/properties/system.prop
+
+# Recovery
+TARGET_RECOVERY_FSTAB := $(LOCAL_COMMON_TREE)/recovery.fstab
+TARGET_RECOVERY_UI_LIB := librecovery_ui_x86
+
+# Fingerprint override
+BUILD_FINGERPRINT := google/fugu/fugu:8.0.0/OPR2.170623.027/4397545:user/release-keys
+
+# Include GloDroid components
+include $(LOCAL_COMMON_TREE)/glodroid/BoardConfig_glodroid.mk
+
