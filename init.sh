@@ -399,6 +399,19 @@ function init_hal_gralloc()
 			GRALLOC=${GRALLOC:-minigbm_arcvm}
 			#video=${video:-1280x768}
 			set_property ro.vendor.hwc.drm.present_fence_not_reliable true
+			# drm hwc3 (composer3, required by SurfaceFlinger) only works
+			# with the GBM gralloc backend. init.los_codec.rc is not
+			# imported on this device, so its on-property trigger never
+			# fires: start the allocator directly instead of relying on it.
+			# Default virtio to it unless the user picked another backend
+			# in Settings.
+			if [ -z "$(getprop persist.sys.los.hardware.gralloc)" ]; then
+				set_property persist.sys.los.hardware.gralloc minigbm_gbm_mesa
+				set_property debug.ui.default_mapper 4
+				set_property debug.ui.default_gralloc 4
+				set_property ro.hardware.gralloc minigbm_gbm_mesa
+				start vendor.graphics.allocator-4-0-gbm_mesa
+			fi
 			;&
 		*nouveau)
 			GRALLOC=${GRALLOC:-minigbm_gbm_mesa}
@@ -433,16 +446,47 @@ function init_hal_gralloc()
 			;;
 	esac
 
-	if [ "$(getprop debug.ui.default_gralloc)" = "4" ]; then
-		set_property debug.ui.default_mapper 4
-		set_property debug.ui.default_gralloc 4
-		# A mapper4 backend was chosen on the settings screen; init.los_codec.rc
-		# already started the matching allocator service.
-	else
-		set_property debug.ui.default_mapper 2
-		set_property debug.ui.default_gralloc 2
-		start vendor.gralloc-2-0
-	fi
+	# NOTE: init.los_codec.rc is not imported on this device, so its
+	# on-property triggers never fire: allocator services are started
+	# directly here instead.
+	gralloc_choice=$(getprop persist.sys.los.hardware.gralloc)
+	case "$gralloc_choice" in
+		minigbm_arcvm)
+			set_property debug.ui.default_mapper 4
+			set_property debug.ui.default_gralloc 4
+			set_property ro.hardware.gralloc minigbm_arcvm
+			start vendor.graphics.allocator-4-0-arcvm
+			;;
+		minigbm_intel)
+			# Intel (i915) backend: Y-tiled gralloc4, matches LOS21
+			# minigbm_intel; the only one where c2.intel decodes HW.
+			set_property debug.ui.default_mapper 4
+			set_property debug.ui.default_gralloc 4
+			set_property ro.hardware.gralloc minigbm_intel
+			start vendor.graphics.allocator-4-0-intel
+			;;
+		minigbm_nouveau)
+			set_property debug.ui.default_mapper 4
+			set_property debug.ui.default_gralloc 4
+			set_property ro.hardware.gralloc minigbm_nouveau
+			start vendor.graphics.allocator-4-0-nouveau
+			;;
+		minigbm|gbm)
+			# Explicit legacy choice: HIDL gralloc 2.0. Note that
+			# composer3 (required by SurfaceFlinger) will not work with it.
+			set_property debug.ui.default_mapper 2
+			set_property debug.ui.default_gralloc 2
+			start vendor.gralloc-2-0
+			;;
+		*)
+			# Default (empty/auto, incl. minigbm_gbm_mesa): GBM backend,
+			# the only one compatible with drm hwc3 (composer3).
+			set_property debug.ui.default_mapper 4
+			set_property debug.ui.default_gralloc 4
+			set_property ro.hardware.gralloc minigbm_gbm_mesa
+			start vendor.graphics.allocator-4-0-gbm_mesa
+			;;
+	esac
 
 	[ -n "$DEBUG" ] && set_property debug.egl.trace error
 }
@@ -505,6 +549,12 @@ function init_hal_hwcomposer()
 	if [ "$HWACCEL" == "0" ] || 
 	[[ "$GPU" == *radeon* ]]; then
 		export HWC_HIDL=${HWC_HIDL:-default-2.1}
+	fi
+
+	# Ensure hw_get_module() finds the right HWC1 .so on live boot
+	# (init.los_codec.rc sets this via persist props which need /data)
+	if [ -z "$(getprop ro.hardware.hwcomposer)" ]; then
+		set_property ro.hardware.hwcomposer ${HWC:-drm_minigbm}
 	fi
 
 	case "$HWC_HIDL" in
@@ -948,8 +998,6 @@ function do_netconsole()
 
 function do_bootcomplete()
 {
-	hciconfig | grep -q hci || pm disable com.android.bluetooth
-
 	init_cpu_governor
 
 	[ -z "$(getprop persist.sys.root_access)" ] && setprop persist.sys.root_access 3
@@ -961,7 +1009,6 @@ function do_bootcomplete()
 			echo on > /sys/devices/pci0000:00/0000:00:15.1/i2c_designware.1/power/control
 			;;
 		VMware*)
-			pm disable com.android.bluetooth
 			;;
 		X80*Power)
 			export POWER_NONBOOT_CPU_OFF=${POWER_NONBOOT_CPU_OFF:-1}

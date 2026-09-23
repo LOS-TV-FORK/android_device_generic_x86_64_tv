@@ -35,6 +35,21 @@ ifeq ($(USE_CROS_HOUDINI_NB),true)
 include vendor/google/chromeos-x86/board/native_bridge_arm_on_x86.mk
 endif
 
+# Native bridge: Google ndk_translation (works on Android 16) by default.
+# Intel Houdini (com1.3) is obsolete/dead on Android 16 ART (native bridge API v8).
+ANDROID_USE_NDK_TRANSLATION ?= true
+ANDROID_USE_INTEL_HOUDINI ?= false
+
+# Guest architectures for the ARM-on-x86 native bridge. Without these Soong
+# does not build any *.native_bridge modules and PRODUCT_PACKAGES fails with
+# "non-existent modules".
+ifneq ($(filter true,$(ANDROID_USE_NDK_TRANSLATION) $(ANDROID_USE_INTEL_HOUDINI)),)
+TARGET_NATIVE_BRIDGE_ARCH := arm64
+TARGET_NATIVE_BRIDGE_ARCH_VARIANT := armv8-a
+TARGET_NATIVE_BRIDGE_CPU_VARIANT := generic
+TARGET_NATIVE_BRIDGE_ABI := arm64-v8a
+endif
+
 ifeq ($(ANDROID_USE_INTEL_HOUDINI),true)
 include vendor/intel/proprietary/houdini/board/native_bridge_arm_on_x86.mk
 endif
@@ -43,9 +58,13 @@ ifeq ($(ANDROID_USE_NDK_TRANSLATION),true)
 include vendor/google/proprietary/ndk_translation-prebuilt/board/native_bridge_arm_on_x86.mk
 endif
 
+# armeabi-v7a (32-bit ARM) native bridge is disabled entirely (arm64-only
+# bridge), matching the WayDroid-ATV device config; the 32-bit berberis
+# prebuilt cannot reliably translate arm32 apps (BKPT/UNDEFINED -> SIGILL).
+TARGET_2ND_CPU_ABI2 :=
 TARGET_CPU_ABI_LIST_64_BIT := $(TARGET_CPU_ABI) $(NATIVE_BRIDGE_ABI_LIST_64_BIT)
-TARGET_CPU_ABI_LIST_32_BIT := $(TARGET_2ND_CPU_ABI) $(NATIVE_BRIDGE_ABI_LIST_32_BIT)
-TARGET_CPU_ABI_LIST := $(TARGET_CPU_ABI) $(TARGET_2ND_CPU_ABI) $(NATIVE_BRIDGE_ABI_LIST_32_BIT) $(NATIVE_BRIDGE_ABI_LIST_64_BIT)
+TARGET_CPU_ABI_LIST_32_BIT := $(TARGET_2ND_CPU_ABI)
+TARGET_CPU_ABI_LIST := $(TARGET_CPU_ABI) $(TARGET_2ND_CPU_ABI) $(NATIVE_BRIDGE_ABI_LIST_64_BIT)
 
 TARGET_USERIMAGES_USE_EXT4 := true
 BOARD_USERDATAIMAGE_PARTITION_SIZE := 576716800
@@ -165,6 +184,8 @@ BOARD_MESA3D_MESON_ARGS := -Dallow-kcmp=enabled -Dmesa-clc=system -Dprecomp-comp
 BUILD_EMULATOR_OPENGL := true
 
 BOARD_KERNEL_CMDLINE := $(if $(filter x86_64,$(TARGET_ARCH) $(TARGET_KERNEL_ARCH)),, vmalloc=192M)
+# USB-хаб: не усыплять (hub не просыпается при подключении/отключении устройств)
+BOARD_KERNEL_CMDLINE += usbcore.autosuspend=-1
 TARGET_KERNEL_DIFFCONFIG := $(LOCAL_COMMON_TREE)/selinux_diffconfig
 
 # Atom specific
@@ -225,7 +246,8 @@ DEVICE_MANIFEST_FILE := $(LOCAL_COMMON_TREE)/manifest.xml
 DEVICE_PRODUCT_COMPATIBILITY_MATRIX_FILE := $(LOCAL_COMMON_TREE)/manifest_framework.xml
 
 BOARD_SEPOLICY_DIRS += $(LOCAL_COMMON_TREE)/sepolicy/celadon/thermal \
-						$(LOCAL_COMMON_TREE)/sepolicy/celadon/thermal/thermal-daemon
+						$(LOCAL_COMMON_TREE)/sepolicy/celadon/thermal/thermal-daemon \
+						vendor/intel/proprietary/houdini/sepolicy
 SYSTEM_EXT_PRIVATE_SEPOLICY_DIRS += $(LOCAL_COMMON_TREE)/sepolicy/plat_private
 SYSTEM_EXT_PUBLIC_SEPOLICY_DIRS += $(LOCAL_COMMON_TREE)/sepolicy/public
 BOARD_VENDOR_SEPOLICY_DIRS += $(LOCAL_COMMON_TREE)/sepolicy/vendor

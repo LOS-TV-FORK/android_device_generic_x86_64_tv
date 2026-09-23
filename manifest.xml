@@ -35,13 +35,6 @@
         <fqname>@4.0::IAllocator/default</fqname>
     </hal>
     <hal format="hidl">
-        <name>android.hardware.graphics.composer</name>
-        <transport>hwbinder</transport>
-        <fqname>@2.1::IComposer/drmfb</fqname>
-        <fqname>@2.1::IComposer/default_clone</fqname>
-        <fqname>@2.4::IComposer/default</fqname>
-    </hal>
-    <hal format="hidl">
         <name>android.hardware.graphics.mapper</name>
         <transport arch="32+64">passthrough</transport>
         <fqname>@2.0::IMapper/default</fqname>

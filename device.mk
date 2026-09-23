@@ -54,12 +54,23 @@ PRODUCT_PACKAGES += \
     init.magisk.sh \
     magisk-stub \
     com.termux \
-    kernelsu \
     Magisk
 
 # Browser (WebView-based; LineageOS ships Jelly for non-ATV, we want it on TV too)
 PRODUCT_PACKAGES += \
     Jelly
+
+# Intel MediaSDK-C2 (vendor/intel/mediasdk_c2) + oneVPL (vendor/intel/external/onevpl
+# and onevpl-gpu-rt): c2.intel.* hardware video codecs over VA-API/oneVPL.
+# The HAL service (android.hardware.media.c2-service.intel) registers the
+# IComponentStore/intel instance; libmfx-gen is the oneVPL GPU runtime loaded
+# at runtime by the libvpl dispatcher from /vendor/lib64; libmfx_c2_components_hw
+# holds the actual codec components referenced from /vendor/etc/mfx_c2_store.conf.
+PRODUCT_PACKAGES += \
+    android.hardware.media.c2-service.intel \
+    libmfx_c2_components_hw \
+    libmfx-gen \
+    libvpl
 
 PRODUCT_PACKAGES_DEBUG += \
     update_engine_client
@@ -67,6 +78,8 @@ PRODUCT_PACKAGES_DEBUG += \
 PRODUCT_PROPERTY_OVERRIDES := \
     ro.lmk.kill_timeout_ms=100 \
     ro.arch=x86 \
+    ro.waydroid.codec2-impl=intel \
+    ro.waydroid.hwcodecs=H264D,H264E,HEVCD,HEVCE,VP80D,VP80E,VP90D,VP90E,AV10D,AV10E,AV1FD,AV1FE \
     persist.rtc_local_time=1 \
     dalvik.vm.useautofastjni=true \
     ro.surface_flinger.max_frame_buffer_acquired_buffers=3 \
@@ -76,7 +89,7 @@ PRODUCT_PROPERTY_OVERRIDES := \
     external_storage.casefold.enabled=1 \
     external_storage.projid.enabled=1
 
-PRODUCT_SYSTEM_EXT_PROPERTIES += ro.setupwizard.mode=DISABLED
+PRODUCT_SYSTEM_EXT_PROPERTIES += ro.setupwizard.mode=OPTIONAL
 
 PRODUCT_COPY_FILES := \
     $(if $(wildcard $(PRODUCT_DIR)init.rc),$(PRODUCT_DIR)init.rc:root/init.rc) \
@@ -98,19 +111,17 @@ PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/ppp/ip-down:$(TARGET_COPY_OUT_SYSTEM)/etc/ppp/ip-down \
     $(LOCAL_PATH)/ppp/peers/gprs:$(TARGET_COPY_OUT_SYSTEM)/etc/ppp/peers/gprs \
     $(LOCAL_PATH)/media_codecs.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs.xml \
-    $(LOCAL_PATH)/codec_manifests/codecs_base.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs/codecs_base.xml \
     $(LOCAL_PATH)/codec_manifests/codecs_intel.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs/codecs_intel.xml \
     $(LOCAL_PATH)/codec_manifests/codecs_ffmpeg.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs/codecs_ffmpeg.xml \
     $(LOCAL_PATH)/init.los_codec.rc:$(TARGET_COPY_OUT_VENDOR)/etc/init/hw/init.los_codec.rc \
-    $(LOCAL_PATH)/media_codecs_intel_c2_video.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_intel_c2_video.xml \
     $(LOCAL_PATH)/media_codecs_ffmpeg_c2_audio.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_ffmpeg_c2_audio.xml \
-    $(LOCAL_PATH)/mfx_c2_store.conf:$(TARGET_COPY_OUT_VENDOR)/etc/mfx_c2_store.conf \
     $(LOCAL_PATH)/media_profiles.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_profiles_V1_0.xml \
     $(LOCAL_PATH)/fstab.internal.x86:$(TARGET_COPY_OUT_SYSTEM)/vendor/etc/fstab.internal.x86 \
     frameworks/av/media/libstagefright/data/media_codecs_google_c2.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_google_c2.xml \
     frameworks/av/media/libstagefright/data/media_codecs_google_c2_audio.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_google_c2_audio.xml \
     frameworks/av/media/libstagefright/data/media_codecs_google_c2_video.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_google_c2_video.xml \
-    external/mesa3d/src/util/00-mesa-defaults.conf:$(TARGET_COPY_OUT_VENDOR)/etc/drirc
+    external/mesa3d/src/util/00-mesa-defaults.conf:$(TARGET_COPY_OUT_VENDOR)/etc/drirc \
+    $(LOCAL_PATH)/sysconfig/keep_home_launchers.xml:$(TARGET_COPY_OUT_SYSTEM)/etc/sysconfig/keep_home_launchers.xml
 
 # Copy Vendor Files
 PRODUCT_COPY_FILES += \
@@ -243,6 +254,15 @@ ifeq ($(USE_CROS_HOUDINI_NB),true)
 $(call inherit-product-if-exists, vendor/google/chromeos-x86/target/houdini.mk)
 $(call inherit-product-if-exists, vendor/google/chromeos-x86/target/native_bridge_arm_on_x86.mk)
 PRODUCT_SYSTEM_DEFAULT_PROPERTIES += persist.sys.nativebridge=1
+endif
+
+ANDROID_USE_NDK_TRANSLATION ?= true
+ANDROID_USE_INTEL_HOUDINI ?= false
+ifeq ($(ANDROID_USE_NDK_TRANSLATION),true)
+ifeq ($(ANDROID_USE_INTEL_HOUDINI),true)
+$(error Cannot enable both ANDROID_USE_NDK_TRANSLATION and ANDROID_USE_INTEL_HOUDINI \
+    - they both provide the ARM-on-x86 native bridge (cpuinfo.arm.txt, ro.dalvik.vm.native.bridge))
+endif
 endif
 
 ifeq ($(ANDROID_USE_NDK_TRANSLATION),true)

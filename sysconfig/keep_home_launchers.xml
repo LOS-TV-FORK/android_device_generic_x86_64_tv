@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Keep the default home launchers out of the force-stopped-by-default set.
+
+    Framework (PackageManagerService) force-stops every freshly scanned system
+    package that has a launcher entry when config_stopSystemPackagesByDefault
+    is true, unless it is listed here with stopped="false". Without this, a
+    fresh install ends up with no resolvable HOME activity and the boot is
+    stuck on the resolver (infinite boot animation).
+-->
+<config>
+    <initial-package-state package="org.lineageos.tv.launcher" stopped="false" />
+    <initial-package-state package="org.lineageos.setupwizard" stopped="false" />
+    <initial-package-state package="com.android.launcher3" stopped="false" />
+    <initial-package-state package="com.android.bluetooth" stopped="false" />
+    <initial-package-state package="com.android.bt" stopped="false" />
+</config>
