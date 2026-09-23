@@ -1,22 +1,22 @@
-# Graphics HAL
+# Graphics HAL — one universal gralloc4 backend that matches what init.sh
+# actually programs at boot (HWC3/composer3 requires gralloc4, mapper@4.0):
+#   init.sh auto/default+virtio sets ro.hardware.gralloc=minigbm_gbm_mesa
+#   and debug.ui.default_mapper=4, so the mapper impl MUST be the gbm_mesa
+#   one (DRV_EXTERNAL via libgbm/mesa), not minigbm (DRV_I915|DRV_AMDGPU)
+#   whose HIDL_FETCH_IMapper returns NULL on that property -> hwc3-service.drm
+#   aborts with "gralloc-mapper is missing" on every boot (QEMU AND real hw).
 PRODUCT_PACKAGES += \
     android.hardware.graphics.mapper@2.0-impl-2.1 \
-    android.hardware.graphics.mapper@4.0-impl.minigbm \
-    android.hardware.graphics.mapper@4.0-impl.minigbm_arcvm\
     android.hardware.graphics.mapper@4.0-impl.minigbm_gbm_mesa \
-    android.hardware.graphics.mapper@4.0-impl.minigbm_nouveau \
     android.hardware.graphics.allocator@2.0-impl \
     android.hardware.graphics.allocator@2.0-service \
-    android.hardware.graphics.allocator@4.0-service.minigbm \
-    android.hardware.graphics.allocator@4.0-service.minigbm_arcvm \
-    android.hardware.graphics.allocator@4.0-service.minigbm_gbm_mesa \
-    android.hardware.graphics.allocator@4.0-service.minigbm_nouveau
+    android.hardware.graphics.allocator@4.0-service.minigbm_gbm_mesa
 
-# HWComposer HAL
+# HWComposer HAL — HWC3 (drm_hwcomposer, нативный для LOS23); единственный.
+# clone@2.1 / 2.4 / hwc3.drm / drmfb-легаси НЕ добавляем: все четверо (плюс drmfb)
+# заявляют инстанцию IComposer и дают VINTF-конфликт + краш vendor.hwcomposer-3 в QEMU.
 PRODUCT_PACKAGES += \
-    android.hardware.graphics.composer@2.1-drmfb-service \
-    android.hardware.graphics.composer@2.1-service-clone \
-    android.hardware.graphics.composer@2.4-service
+    android.hardware.composer.hwc3-service.drm
 
 # Audio HAL
 PRODUCT_PACKAGES += \
@@ -31,6 +31,8 @@ PRODUCT_PACKAGES += \
     android.hardware.bluetooth.audio-impl
 
 # Media codec
+# c2.intel (via libva/VA-API + iHD) — КЛЮЧЕВАЯ ЦЕЛЬ: аппаратный декод видео на Intel.
+# НЕ удалять к bootloop отношения не имеет; возвращено после ошибочной правки.
 PRODUCT_PACKAGES += \
     android.hardware.media.c2-ffmpeg-service \
     android.hardware.media.c2-service.intel \

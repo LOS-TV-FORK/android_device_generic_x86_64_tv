@@ -16,6 +16,10 @@
 
 # Get the directory of this vendorsetup.sh script
 CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
+
+# Intel Houdini (obsolete native bridge, conflicts with ndk_translation).
+# Keep ndk_translation as the only ARM-on-x86 bridge (BoardConfig default).
+#export ANDROID_USE_INTEL_HOUDINI=true
 if [ "$SKIP_AG_DOWNLOADS" != "true" ]; then
 bash bootable/aaropa/download.sh
 bash ${CURRENT_DIR}/download_sof-firmware.sh
