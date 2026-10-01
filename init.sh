@@ -611,14 +611,6 @@ function init_hal_media()
 	else
 		set_property debug.ffmpeg-codec2.deinterlace.vaapi $FFMPEG_CODEC2_DEINTERLACE_VAAPI
 	fi
-## Handle DRM prime on ffmpeg codecs, we will disable by default due to 
-## the fact that it doesn't work with gbm_gralloc yet.
-	if [ "$FFMPEG_CODEC2_DRM" -ge "1" ]; then
-	    set_prop_if_empty debug.ffmpeg-codec2.hwaccel.drm 1
-	else
-	    set_prop_if_empty debug.ffmpeg-codec2.hwaccel.drm 0
-	fi
-
 ## Handle which GPU driver will use which pixel format
 ## c2.ffmpeg can be able to switch now
 	case "$GPU" in
@@ -626,6 +618,10 @@ function init_hal_media()
 			set_property persist.ffmpeg-codec2.pixel_format RGBX_8888
 			;;
 		*i915|*xe|*amdgpu)
+			# Only a literal "minigbm" allocator can hand out YUV planes.
+			# The Mesa based allocator (minigbm_gbm_mesa) goes through
+			# gbm, which does not support YUV, so it must use RGBX and
+			# let the component convert.
 			if [ "$(getprop ro.hardware.gralloc)" != "minigbm" ]; then
 				set_property persist.ffmpeg-codec2.pixel_format RGBX_8888
 			else
@@ -637,22 +633,28 @@ function init_hal_media()
 			;;
 	esac
 
-## Codec2 engine selection ("Codec2 backend" on the settings screen).
-## A manual choice (persist.sys.los.codec2-impl=ffmpeg|intel) is applied by
-## init.los_codec.rc via a bind mount and takes precedence. The "auto" (or
-## unset) case is resolved HERE by GPU: Intel MediaSDK on i915/xe, FFmpeg on
-## everything else (Intel's VAAPI driver has no HW on other vendors).
-	local c2choice="$(getprop persist.sys.los.codec2-impl 2>/dev/null)"
-	if [ -z "$c2choice" ] || [ "$c2choice" = "auto" ]; then
-		case "$GPU" in
-			*i915|*xe)
-				mount --bind /vendor/etc/media_codecs/codecs_intel.xml /vendor/etc/media_codecs.xml 2>/dev/null
-				;;
-			*)
-				mount --bind /vendor/etc/media_codecs/codecs_ffmpeg.xml /vendor/etc/media_codecs.xml 2>/dev/null
-				;;
-		esac
+## Handle DRM prime on ffmpeg codecs. This gives c2.ffmpeg a true zero-copy
+## path: VA surfaces are created straight from the gralloc dma-buf, so decoded
+## frames reach the consumer without a CPU readback (and, on Intel, without
+## Y-tiled detiling). It needs a YUV gralloc buffer with exported dma-buf
+## planes, which every minigbm allocator provides.
+##
+## Keep this disabled by default: the zero-copy path is not verified yet, and
+## when it breaks it takes the whole c2-ffmpeg service down with it. Enable
+## explicitly with FFMPEG_CODEC2_DRM=1 once the surface handling is proven.
+	if [ -z "${FFMPEG_CODEC2_DRM+x}" ]; then
+	    set_prop_if_empty debug.ffmpeg-codec2.hwaccel.drm 0
+	elif [ "$FFMPEG_CODEC2_DRM" -ge "1" ]; then
+	    set_prop_if_empty debug.ffmpeg-codec2.hwaccel.drm 1
+	else
+	    set_prop_if_empty debug.ffmpeg-codec2.hwaccel.drm 0
 	fi
+
+## Codec2 engine selection ("Codec2 backend" on the settings screen).
+## Intel MediaSDK-C2 was never part of stock and is fully removed from this
+## product, so the only engine left is FFmpeg. The per-GPU switch and the
+## c2.intel.* bind mount are gone; FFmpeg is used unconditionally.
+	mount --bind /vendor/etc/media_codecs/codecs_ffmpeg.xml /vendor/etc/media_codecs.xml 2>/dev/null
 
 }
 
