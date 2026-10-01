@@ -283,3 +283,8 @@ BUILD_FINGERPRINT := google/fugu/fugu:8.0.0/OPR2.170623.027/4397545:user/release
 # Include GloDroid components
 include $(LOCAL_COMMON_TREE)/glodroid/BoardConfig_glodroid.mk
 
+
+# VA-API hardware decode via FFmpeg (c2.ffmpeg.*): enables libva paths in
+# stagefright-plugins (see external/stagefright-plugins/codec2/Android.mk).
+# FFmpeg itself is built with VAAPI_DRM (external/ffmpeg/android configs).
+CONFIG_VAAPI := yes

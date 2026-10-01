@@ -34,9 +34,21 @@ PRODUCT_PACKAGES += \
     libgbm_mesa_wrapper \
     dri_gbm \
     crocus_drv_video \
-    iHD_drv_video \
-    vainfo \
     amdgpu.ids
+
+# VA-API stack used by our own hardware video decoder (vendor/intel/va_decoder,
+# "vadec"). This replaces Intel MediaSDK, which was never part of stock and was
+# removed; the decoder talks to iHD_drv_video.so through libva directly.
+#
+# All three must be installed together: iHD_drv_video.so links against
+# libigdgmm_android.so (gmmlib) and is dlopen()ed by libva. If any one of them
+# is missing, vaInitialize() fails and the decoder cannot open the driver at
+# all - the driver advertises its VA-API version only as __vaDriverInit_1_23,
+# which is what the bundled libva (VA_MINOR_VERSION 23) looks for.
+PRODUCT_PACKAGES += \
+    libva \
+    libigdgmm_android \
+    iHD_drv_video
 
 PRODUCT_VENDOR_PROPERTIES += \
     debug.angle.feature_overrides_enabled=preferLinearFilterForYUV

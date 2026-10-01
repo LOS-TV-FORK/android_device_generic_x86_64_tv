@@ -95,7 +95,13 @@ PRODUCT_PACKAGES += regulatory.db regulatory.db.p7s
 
 
 # Some additional CLI programs
-PRODUCT_PACKAGES += tput dialog alsa-info.sh tree lspci dmidecode vainfo evtest efibootmgr
+PRODUCT_PACKAGES += tput dialog alsa-info.sh tree lspci dmidecode evtest efibootmgr
+
+# VA-API stack namespaces (libva/gmmlib/iHD media driver, used by ffmpeg).
+PRODUCT_SOONG_NAMESPACES += \
+    hardware/intel/common/libva \
+    hardware/intel/common/gmmlib \
+    hardware/intel/common/media-driver
 
 # Surface specific
 ifeq ($(BOARD_IS_SURFACE_BUILD),true)
