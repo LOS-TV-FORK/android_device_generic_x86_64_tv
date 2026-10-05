@@ -1,3 +1,5 @@
 /(vendor|system/vendor)/bin/logwrapper      u:object_r:logwrapper_exec:s0
 /(vendor|system/vendor)/bin/hw/android\.hardware\.camera\.provider@2\.7-service-google u:object_r:hal_camera_default_exec:s0
 /(vendor|system/vendor)/bin/hw/android\.hardware\.composer\.hwc3-service\.drm u:object_r:hal_graphics_composer_default_exec:s0
+# Native installer engine (init service, genuine root, no su)
+/(vendor|system/vendor)/etc/installer/watch\.sh    u:object_r:installer_engine_exec:s0

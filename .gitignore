@@ -1,3 +1,9 @@
 # Ignore downloaded ID files
 ids/*.ids
 wireless-regdb/regulatory.db*
+
+# Local-only proprietary blobs: MUST NEVER reach GitHub.
+# Restored locally via download scripts / manual copy (see download_*.sh).
+firmware/
+installer/tools/
+prebuilt/
