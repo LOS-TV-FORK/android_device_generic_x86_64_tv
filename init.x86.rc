@@ -118,6 +118,15 @@ service kmsg_fetch /system/bin/sh /system/etc/init.sh kmsg
     user root
     class debug
 
+# Native installer engine watcher: genuine root via init, no su/Magisk.
+# The installer app drops /data/local/tmp/installer.job, the watcher runs
+# /vendor/etc/installer/engine.sh which reports to installer.status/.log.
+service installer-watch /system/bin/sh /vendor/etc/installer/watch.sh
+    class main
+    user root
+    group root
+    seclabel u:r:installer_engine:s0
+
 service vendor.boot-mode-selection /vendor/bin/boot-mode-selection.sh ${sys.shutdown.requested}
     user root
     group root

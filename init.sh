@@ -1057,6 +1057,23 @@ function do_bootcomplete()
 		echo $BUILD_DATETIME > "$POST_INST"
 	fi
 
+	# Seed prebuilt Magisk module(s) into /data/adb/modules on first boot.
+	# Installs every zip in /system/etc/magisk-modules/ via its own installer.
+	# Each module activates on the next reboot (Magisk magic mount).
+	for MAGISK_SEED_ZIP in /system/etc/magisk-modules/*.zip; do
+		[ -f "$MAGISK_SEED_ZIP" ] || continue
+		[ -d /data/adb/modules ] || break
+		MAGISK_SEEDED=/data/vendor/magisk_modules_seeded_$(basename "$MAGISK_SEED_ZIP" .zip)
+		if [ ! -f "$MAGISK_SEEDED" ]; then
+			mkdir -p /tmp/mtgseed
+			if unzip -o -q "$MAGISK_SEED_ZIP" 'META-INF/com/google/android/update-binary' -d /tmp/mtgseed \
+			    && sh /tmp/mtgseed/META-INF/com/google/android/update-binary 3 1 "$MAGISK_SEED_ZIP"; then
+				touch "$MAGISK_SEEDED"
+			fi
+			rm -rf /tmp/mtgseed
+		fi
+	done
+
 	#Auto activate XtMapper
 	#nohup env LD_LIBRARY_PATH=$(echo /data/app/*/xtr.keymapper*/lib/x86_64) \
 	#CLASSPATH=$(echo /data/app/*/xtr.keymapper*/base.apk) /system/bin/app_process \
@@ -1064,6 +1081,22 @@ function do_bootcomplete()
 
 	if [ ! "$(getprop ro.boot.slot_suffix)" ]; then
 		pm disable org.lineageos.updater
+	fi
+
+	# Enable LeanKeyKeyboard as the default IME on first boot only.
+	# (It declares no locale subtypes, so the framework never picks it
+	# automatically.) Only fills an empty selection, never overrides a
+	# user choice.
+	IME_PROVISIONED=/data/vendor/leankeyboard_ime_provisioned
+	CUR_IME="$(settings get secure default_input_method)"
+	CUR_PKG="${CUR_IME%%/*}"
+	if [ ! -f "$IME_PROVISIONED" ] \
+	    && [ -n "$(pm path org.liskovsoft.androidtv.rukeyboard 2>/dev/null)" ] \
+	    && { [ -z "$CUR_IME" ] || [ -z "$(pm path $CUR_PKG 2>/dev/null)" ]; }; then
+		ime enable org.liskovsoft.androidtv.rukeyboard/com.liskovsoft.leankeyboard.ime.LeanbackImeService
+		ime set org.liskovsoft.androidtv.rukeyboard/com.liskovsoft.leankeyboard.ime.LeanbackImeService
+		appops set --user 0 org.liskovsoft.androidtv.rukeyboard SYSTEM_ALERT_WINDOW allow
+		touch "$IME_PROVISIONED"
 	fi
 
 	init_hal_thermal

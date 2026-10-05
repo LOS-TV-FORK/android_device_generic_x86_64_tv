@@ -54,23 +54,26 @@ PRODUCT_PACKAGES += \
     init.magisk.sh \
     magisk-stub \
     com.termux \
-    Magisk
+    Magisk \
+    LeanKeyboard
 
 # Browser (WebView-based; LineageOS ships Jelly for non-ATV, we want it on TV too)
 PRODUCT_PACKAGES += \
     Jelly
 
-# Intel MediaSDK-C2 (vendor/intel/mediasdk_c2) + oneVPL (vendor/intel/external/onevpl
-# and onevpl-gpu-rt): c2.intel.* hardware video codecs over VA-API/oneVPL.
-# The HAL service (android.hardware.media.c2-service.intel) registers the
-# IComponentStore/intel instance; libmfx-gen is the oneVPL GPU runtime loaded
-# at runtime by the libvpl dispatcher from /vendor/lib64; libmfx_c2_components_hw
-# holds the actual codec components referenced from /vendor/etc/mfx_c2_store.conf.
+# Set Orientation: overlay rotation toggle, prebuilt (see prebuilt/SetOrientation).
+# Not in the user_app directory because its targetSdk 16 is refused by pm install
+# on Android 14+, so it has to be a packaged system app.
 PRODUCT_PACKAGES += \
-    android.hardware.media.c2-service.intel \
-    libmfx_c2_components_hw \
-    libmfx-gen \
-    libvpl
+    SetOrientation
+
+# Widevine DRM L3 (AIDL). The product ships without Widevine, so this adds the
+# only copy of the HAL instead of replacing one.
+$(call inherit-product-if-exists, vendor/google/proprietary/widevine-prebuilt/widevine-prebuilt.mk)
+
+# Intel MediaSDK-C2 и oneVPL отключены откатом: в стоке их не было, а
+# c2.intel.* в этой сборке не работал. Аппаратное декодирование видео
+# недоступно, система использует программные кодеки.
 
 PRODUCT_PACKAGES_DEBUG += \
     update_engine_client
@@ -78,8 +81,6 @@ PRODUCT_PACKAGES_DEBUG += \
 PRODUCT_PROPERTY_OVERRIDES := \
     ro.lmk.kill_timeout_ms=100 \
     ro.arch=x86 \
-    ro.waydroid.codec2-impl=intel \
-    ro.waydroid.hwcodecs=H264D,H264E,HEVCD,HEVCE,VP80D,VP80E,VP90D,VP90E,AV10D,AV10E,AV1FD,AV1FE \
     persist.rtc_local_time=1 \
     dalvik.vm.useautofastjni=true \
     ro.surface_flinger.max_frame_buffer_acquired_buffers=3 \
@@ -111,7 +112,6 @@ PRODUCT_COPY_FILES += \
     $(LOCAL_PATH)/ppp/ip-down:$(TARGET_COPY_OUT_SYSTEM)/etc/ppp/ip-down \
     $(LOCAL_PATH)/ppp/peers/gprs:$(TARGET_COPY_OUT_SYSTEM)/etc/ppp/peers/gprs \
     $(LOCAL_PATH)/media_codecs.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs.xml \
-    $(LOCAL_PATH)/codec_manifests/codecs_intel.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs/codecs_intel.xml \
     $(LOCAL_PATH)/codec_manifests/codecs_ffmpeg.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs/codecs_ffmpeg.xml \
     $(LOCAL_PATH)/init.los_codec.rc:$(TARGET_COPY_OUT_VENDOR)/etc/init/hw/init.los_codec.rc \
     $(LOCAL_PATH)/media_codecs_ffmpeg_c2_audio.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_ffmpeg_c2_audio.xml \
@@ -122,6 +122,12 @@ PRODUCT_COPY_FILES += \
     frameworks/av/media/libstagefright/data/media_codecs_google_c2_video.xml:$(TARGET_COPY_OUT_VENDOR)/etc/media_codecs_google_c2_video.xml \
     external/mesa3d/src/util/00-mesa-defaults.conf:$(TARGET_COPY_OUT_VENDOR)/etc/drirc \
     $(LOCAL_PATH)/sysconfig/keep_home_launchers.xml:$(TARGET_COPY_OUT_SYSTEM)/etc/sysconfig/keep_home_launchers.xml
+
+# Prebuilt Magisk module seed(s): drop module zips into $(LOCAL_PATH)/magisk-modules/
+# and uncomment the lines below — init.sh installs each into /data/adb/modules
+# on first boot (runs each zip's own installer, marker per file).
+#PRODUCT_COPY_FILES += \
+#    $(LOCAL_PATH)/magisk-modules/MyModule.zip:$(TARGET_COPY_OUT_SYSTEM)/etc/magisk-modules/MyModule.zip
 
 # Copy Vendor Files
 PRODUCT_COPY_FILES += \
@@ -171,6 +177,31 @@ PRODUCT_COPY_FILES += \
 # Copy Misc Config Files
 PRODUCT_COPY_FILES += \
     $(foreach f,$(wildcard $(LOCAL_PATH)/idc/*.idc $(LOCAL_PATH)/keylayout/*.kl),$(f):$(subst $(LOCAL_PATH),system/usr,$(f)))
+
+# AMD GPU firmware (prebuilt linux-firmware blobs, VCN/UVD/VCE + bringup).
+# libva maps amdgpu -> radeonsi automatically; Intel path untouched.
+PRODUCT_COPY_FILES += \
+    $(foreach f,$(wildcard $(LOCAL_PATH)/firmware/amdgpu/*),$(f):$(TARGET_COPY_OUT_VENDOR)/firmware/amdgpu/$(notdir $(f)))
+# Legacy Radeon (r600/radeon driver) bringup firmware, same method.
+PRODUCT_COPY_FILES += \
+    $(foreach f,$(wildcard $(LOCAL_PATH)/firmware/radeon/*),$(f):$(TARGET_COPY_OUT_VENDOR)/firmware/radeon/$(notdir $(f)))
+# NativeInstaller GRUB prebuilts (BIOS core.img/boot.img/modules,
+# UEFI BOOTX64.EFI/modules). Used only by the installer app.
+PRODUCT_COPY_FILES += \
+    $(foreach f,$(wildcard $(LOCAL_PATH)/installer/grub/bios/*),$(f):$(TARGET_COPY_OUT_SYSTEM)/etc/installer/grub/bios/$(notdir $(f)))
+PRODUCT_COPY_FILES += \
+    $(foreach f,$(wildcard $(LOCAL_PATH)/installer/grub/efi/*),$(f):$(TARGET_COPY_OUT_SYSTEM)/etc/installer/grub/efi/$(notdir $(f)))
+# Native installer watcher (init service, genuine root).
+PRODUCT_COPY_FILES += \
+    $(LOCAL_PATH)/installer/watch.sh:$(TARGET_COPY_OUT_VENDOR)/etc/installer/watch.sh
+# Native installer engine (Java, no shell logic).
+PRODUCT_PACKAGES += \
+    installer-engine
+# Native installer tools (Termux prebuilts: parted + mkfs.vfat + libs).
+PRODUCT_COPY_FILES += \
+    $(foreach f,$(wildcard $(LOCAL_PATH)/installer/tools/bin/*),$(f):$(TARGET_COPY_OUT_SYSTEM)/etc/installer/tools/bin/$(notdir $(f)))
+PRODUCT_COPY_FILES += \
+    $(foreach f,$(wildcard $(LOCAL_PATH)/installer/tools/lib/*),$(f):$(TARGET_COPY_OUT_SYSTEM)/etc/installer/tools/lib/$(notdir $(f)))
 
 # Go init
 ifeq ($(BOARD_IS_GO_BUILD),true)

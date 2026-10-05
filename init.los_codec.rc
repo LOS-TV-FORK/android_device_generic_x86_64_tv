@@ -60,10 +60,5 @@ on property:persist.sys.los.media.sf.hwaccel.force=0
     setprop debug.ffmpeg-codec2.fast 0
 
 # --- codec2 engine: swap the manifest with a bind mount, no file rewriting ---
-# Manual choice (ffmpeg|intel) is applied here. The "auto" case is deliberately
-# NOT handled in rc: init.sh picks intel-vs-ffmpeg by GPU, so it must perform
-# the bind mount itself after GPU detection (see init.sh init_hal_media).
 on property:persist.sys.los.codec2-impl=ffmpeg
     mount none /vendor/etc/media_codecs/codecs_ffmpeg.xml /vendor/etc/media_codecs.xml bind
-on property:persist.sys.los.codec2-impl=intel
-    mount none /vendor/etc/media_codecs/codecs_intel.xml /vendor/etc/media_codecs.xml bind

@@ -22,3 +22,10 @@ prebuilt_etc {
     src: "Magisk.apk",
     sub_dir: "user_app",
 }
+
+prebuilt_etc {
+    name: "LeanKeyboard",
+    filename: "LeanKeyboard.apk",
+    src: "LeanKeyboard.apk",
+    sub_dir: "user_app",
+}

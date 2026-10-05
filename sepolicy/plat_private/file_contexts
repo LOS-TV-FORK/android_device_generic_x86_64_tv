@@ -5,6 +5,7 @@
 /(vendor|system/vendor)/bin/hw/android\.hardware\.graphics\.allocator@4\.0-service\.minigbm_gbm_mesa        u:object_r:hal_graphics_allocator_default_exec:s0
 /(vendor|system/vendor)/lib(64)?/libgallium_dri\.so							u:object_r:same_process_hal_file:s0
 /(vendor|system/vendor)/bin/hw/android\.hardware\.graphics\.composer@2\.1-service-clone              u:object_r:hal_graphics_composer_default_exec:s0
+/(vendor|system/vendor)/bin/hw/android\.hardware\.media\.c2-ffmpeg-service                          u:object_r:mediacodec_exec:s0
 
 # Files in rootfs
 /boot(/.*)?       u:object_r:bootdir_file:s0

@@ -31,14 +31,9 @@ PRODUCT_PACKAGES += \
     android.hardware.bluetooth.audio-impl
 
 # Media codec
-# c2.intel (via libva/VA-API + iHD) — КЛЮЧЕВАЯ ЦЕЛЬ: аппаратный декод видео на Intel.
-# НЕ удалять к bootloop отношения не имеет; возвращено после ошибочной правки.
+# Software codecs always present.
 PRODUCT_PACKAGES += \
-    android.hardware.media.c2-ffmpeg-service \
-    android.hardware.media.c2-service.intel \
-    libmfx_c2_components_hw \
-    libvpl \
-    libmfx-gen
+    android.hardware.media.c2-ffmpeg-service
 
 # DumpState HAL
 PRODUCT_PACKAGES += \

@@ -1,0 +1,4 @@
+# Native installer engine: genuine root via init, no su/Magisk involved.
+type installer_engine, domain;
+type installer_engine_exec, exec_type, vendor_file_type, file_type;
+init_daemon_domain(installer_engine)

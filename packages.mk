@@ -124,3 +124,7 @@ PRODUCT_PACKAGES += blisspath boot-mode-selection.sh
 ## ATV
 PRODUCT_PACKAGES += \
     DocumentsUI
+
+# Native live installer (inert unless booted live from ISO)
+PRODUCT_PACKAGES += \
+    NativeInstaller
