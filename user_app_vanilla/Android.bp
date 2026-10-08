@@ -29,3 +29,10 @@ prebuilt_etc {
     src: "LeanKeyboard.apk",
     sub_dir: "user_app",
 }
+
+prebuilt_etc {
+    name: "materialfiles",
+    filename: "materialfiles.apk",
+    src: "materialfiles.apk",
+    sub_dir: "user_app",
+}

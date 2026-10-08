@@ -95,7 +95,7 @@ PRODUCT_PACKAGES += regulatory.db regulatory.db.p7s
 
 
 # Some additional CLI programs
-PRODUCT_PACKAGES += tput dialog alsa-info.sh tree lspci dmidecode evtest efibootmgr
+PRODUCT_PACKAGES += tput dialog alsa-info.sh tree lspci dmidecode evtest efibootmgr ntfsresize fsck.ntfs
 
 # VA-API stack namespaces (libva/gmmlib/iHD media driver, used by ffmpeg).
 PRODUCT_SOONG_NAMESPACES += \

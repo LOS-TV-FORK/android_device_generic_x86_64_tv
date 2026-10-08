@@ -55,7 +55,8 @@ PRODUCT_PACKAGES += \
     magisk-stub \
     com.termux \
     Magisk \
-    LeanKeyboard
+    LeanKeyboard \
+    materialfiles
 
 # Browser (WebView-based; LineageOS ships Jelly for non-ATV, we want it on TV too)
 PRODUCT_PACKAGES += \
