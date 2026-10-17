@@ -177,6 +177,13 @@ function init_hal_audio_bootcomplete()
 		alsa_ctl init
 		# Restore /data/vendor/asound.state if found
 		alsa_ctl restore
+		# Restored states predate the per-pin HDMI unmute: unmute all
+		# HDMI pins unconditionally (same as in the defaults below).
+		for c in $(grep '\[.*\]' /proc/asound/cards | awk '{print $1}'); do
+			for i in 1 2 3 4 5 6 7; do
+				alsa_amixer -c $c cset "name='IEC958 Playback Switch',index=$i" on 2>/dev/null
+			done
+		done
 	else
 		# Initialize as usual
 		# 1. Initialize the all the audio cards
@@ -203,6 +210,11 @@ function init_hal_audio_bootcomplete()
 				alsa_amixer -c $c set PCM 100% unmute
 				alsa_amixer -c $c set SPO unmute
 				alsa_amixer -c $c set IEC958 on
+				# HDMI pins live on per-index IEC958 switches (index N =
+				# device 3+N on HDA); the TV is rarely pin 0, unmute all.
+				for i in 1 2 3 4 5 6 7; do
+					alsa_amixer -c $c cset "name='IEC958 Playback Switch',index=$i" on 2>/dev/null
+				done
 				alsa_amixer -c $c set 'Mic Boost' 1
 				alsa_amixer -c $c set 'Internal Mic Boost' 1
 
@@ -450,6 +462,15 @@ function init_hal_gralloc()
 	# on-property triggers never fire: allocator services are started
 	# directly here instead.
 	gralloc_choice=$(getprop persist.sys.los.hardware.gralloc)
+	# Breadcrumb for the minigbm_intel mystery: log the effective
+	# choice every boot so dmesg always shows what was selected.
+	echo "los-gralloc: choice='$gralloc_choice' GPU='$GPU'" > /dev/kmsg 2>/dev/null || true
+	# Live sessions move between machines (Intel box today, Ryzen
+	# tomorrow): a persisted GPU backend from another machine is
+	# poison here. Always auto-detect the present hardware on live.
+	if grep -q "androidboot.live=true" /proc/cmdline 2>/dev/null; then
+		gralloc_choice=""
+	fi
 	case "$gralloc_choice" in
 		minigbm_arcvm)
 			set_property debug.ui.default_mapper 4
@@ -615,7 +636,7 @@ function init_hal_media()
 ## c2.ffmpeg can be able to switch now
 	case "$GPU" in
 		*virtio_gpu|*virtio-pci|*nouveau|*radeon)
-			set_property persist.ffmpeg-codec2.pixel_format RGBX_8888
+			set_prop_if_empty persist.ffmpeg-codec2.pixel_format RGBX_8888
 			;;
 		*i915|*xe|*amdgpu)
 			# Only a literal "minigbm" allocator can hand out YUV planes.
@@ -623,13 +644,13 @@ function init_hal_media()
 			# gbm, which does not support YUV, so it must use RGBX and
 			# let the component convert.
 			if [ "$(getprop ro.hardware.gralloc)" != "minigbm" ]; then
-				set_property persist.ffmpeg-codec2.pixel_format RGBX_8888
+				set_prop_if_empty persist.ffmpeg-codec2.pixel_format RGBX_8888
 			else
-				set_property persist.ffmpeg-codec2.pixel_format YUV_420
+				set_prop_if_empty persist.ffmpeg-codec2.pixel_format YUV_420
 			fi
 			;;
 		*)
-			set_property persist.ffmpeg-codec2.pixel_format RGB_565
+			set_prop_if_empty persist.ffmpeg-codec2.pixel_format RGB_565
 			;;
 	esac
 
@@ -972,8 +993,23 @@ function set_custom_timezone()
 
 function do_init()
 {
+	# Resolution switching without display destruction: SurfaceFlinger must
+	# see this before its first flag read (statically cached), i.e. here in
+	# post-fs, long before the graphics stack starts. Paired with the
+	# modeset_state_machine OFF default and the HWC bounded modeset commit,
+	# a resolution switch goes: initiate directly -> KMS modeset (black
+	# buffer covers the gap) -> finalize without destroying the display ->
+	# client framebuffers reallocate on the next invalidate. No wm size,
+	# no persistent votes (TvSettings stores only on OK).
+	set_property debug.sf.synced_resolution_switch true
 	init_misc
 	set_custom_timezone
+	# Unbind fbcon from the framebuffer console: with fbcon bound and the
+	# kernel console on the display, any printk during a KMS modeset lets
+	# the text console steal the CRTC (black screen + cursor) no matter
+	# whether the atomic commit itself succeeded. TV boxes need no text
+	# console; this must run before graphics comes up.
+	echo 0 > /sys/class/vtconsole/vtcon1/bind 2>/dev/null
 	init_hal_audio
 	set_custom_ota
 	init_hal_brcm_wifi
