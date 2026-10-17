@@ -7,3 +7,8 @@ wireless-regdb/regulatory.db*
 firmware/
 installer/tools/
 prebuilt/
+
+# GRUB core image: a packed binary image, not source. Rebuilt locally with
+# grub-mkimage from the .mod files next to it, so it does not belong in git.
+installer/grub/bios/core.img
+installer/grub/efi/BOOTX64.EFI
