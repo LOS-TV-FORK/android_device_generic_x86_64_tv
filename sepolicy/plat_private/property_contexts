@@ -1,0 +1,2 @@
+# Product namespace for Settings-driven tunables, applied by init triggers.
+persist.sys.los.		u:object_r:los_custom_prop:s0

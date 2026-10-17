@@ -1,0 +1,3 @@
+# Blocking modeset (resolution switch) allocates its own buffer via the
+# graphics allocator; without client rights SetConfig always fails.
+hal_client_domain(hal_graphics_composer_default, hal_graphics_allocator)

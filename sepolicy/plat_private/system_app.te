@@ -3,3 +3,7 @@ allow system_app bootdir_file:dir { search write add_name remove_name };
 
 # Allow system apps to create, read, and write files in /boot
 allow system_app bootdir_file:file { create read write open getattr setattr };
+
+# TvSettings toggles under persist.sys.los.* (media hwaccel, GPU tunables).
+get_prop(system_app, los_custom_prop)
+set_prop(system_app, los_custom_prop)

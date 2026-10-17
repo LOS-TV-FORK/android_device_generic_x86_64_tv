@@ -1,0 +1,4 @@
+# Product namespace for Settings-driven tunables (persist.sys.los.*).
+# Must be a SYSTEM type: coredomain (system_app) may not set vendor types,
+# and only owned (system/product/vendor) types may touch property storage.
+system_public_prop(los_custom_prop)
